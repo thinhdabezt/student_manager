@@ -105,7 +105,8 @@ class DatabaseHelper {
     if (oldVersion < 2) {
       // add role column with default 'student' to existing table
       await db.execute(
-          "ALTER TABLE UserAccount ADD COLUMN role TEXT DEFAULT 'student'");
+        "ALTER TABLE UserAccount ADD COLUMN role TEXT DEFAULT 'student'",
+      );
     }
   }
 
@@ -126,7 +127,12 @@ class DatabaseHelper {
 
   Future<int> updateNganh(Nganh nganh) async {
     final db = await database;
-    return await db.update('Nganh', nganh.toMap(), where: 'id = ?', whereArgs: [nganh.id]);
+    return await db.update(
+      'Nganh',
+      nganh.toMap(),
+      where: 'id = ?',
+      whereArgs: [nganh.id],
+    );
   }
 
   Future<int> deleteNganh(int id) async {
@@ -158,7 +164,22 @@ class DatabaseHelper {
 
   Future<int> updateSinhVien(SinhVien sv) async {
     final db = await database;
-    return await db.update('Sinhvien', sv.toMap(), where: 'id = ?', whereArgs: [sv.id]);
+    return await db.update(
+      'Sinhvien',
+      sv.toMap(),
+      where: 'id = ?',
+      whereArgs: [sv.id],
+    );
+  }
+
+  Future<void> updateUserSinhvien(int userId, int sinhvienId) async {
+    final db = await database;
+    await db.update(
+      'UserAccount',
+      {'sinhvien_id': sinhvienId},
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
   }
 
   Future<int> deleteSinhVien(int id) async {
@@ -177,7 +198,11 @@ class DatabaseHelper {
 
   Future<UserAccount?> getUserByUsername(String username) async {
     final db = await database;
-    final maps = await db.query('UserAccount', where: 'username = ?', whereArgs: [username]);
+    final maps = await db.query(
+      'UserAccount',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
     if (maps.isNotEmpty) return UserAccount.fromMap(maps.first);
     return null;
   }
@@ -186,25 +211,29 @@ class DatabaseHelper {
     final db = await database;
     return await db.delete('UserAccount', where: 'id = ?', whereArgs: [id]);
   }
+
   Future<int> registerUser(UserAccount user) async {
-  final db = await database;
-  return await db.insert('UserAccount', user.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-}
-
-Future<UserAccount?> loginUser(String username, String password) async {
-  final db = await database;
-  final hash = sha256.convert(utf8.encode(password)).toString();
-
-  final result = await db.query(
-    'UserAccount',
-    where: 'username = ? AND password_hash = ?',
-    whereArgs: [username, hash],
-  );
-
-  if (result.isNotEmpty) {
-    return UserAccount.fromMap(result.first);
+    final db = await database;
+    return await db.insert(
+      'UserAccount',
+      user.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
-  return null;
-}
+
+  Future<UserAccount?> loginUser(String username, String password) async {
+    final db = await database;
+    final hash = sha256.convert(utf8.encode(password)).toString();
+
+    final result = await db.query(
+      'UserAccount',
+      where: 'username = ? AND password_hash = ?',
+      whereArgs: [username, hash],
+    );
+
+    if (result.isNotEmpty) {
+      return UserAccount.fromMap(result.first);
+    }
+    return null;
+  }
 }

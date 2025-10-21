@@ -4,6 +4,7 @@ import 'package:student_manager/providers/auth_provider.dart';
 import 'package:student_manager/providers/major_provider.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/screens/student_detail_screen.dart';
+import 'package:student_manager/screens/student_form_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/student_list_screen.dart';
 
@@ -33,6 +34,7 @@ class StudentManagerApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/students': (context) => const StudentListScreen(),
           '/student_detail': (context) => const StudentDetailScreen(),
+          '/student_form': (context) => const StudentFormScreen(),
         },
       ),
     );

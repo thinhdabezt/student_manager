@@ -76,12 +76,13 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
 
       if (widget.existingStudent == null) {
         await studentProvider.addStudent(newStudent);
+        // Lấy lại sinh viên vừa thêm (cuối danh sách)
+        final students = studentProvider.students;
+        final added = students.isNotEmpty ? students.last : null;
+        if (mounted) Navigator.pop(context, added?.id);
       } else {
         await studentProvider.updateStudent(newStudent);
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
+        if (mounted) Navigator.pop(context);
       }
     }
   }

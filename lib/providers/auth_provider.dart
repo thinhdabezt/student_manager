@@ -30,15 +30,36 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  Future<bool> register(String username, String password, {String role = 'student'}) async {
+  Future<bool> register(
+    String username,
+    String password, {
+    String role = 'student',
+  }) async {
     final hash = sha256.convert(utf8.encode(password)).toString();
-    final user = UserAccount(username: username, passwordHash: hash, role: role);
+    final user = UserAccount(
+      username: username,
+      passwordHash: hash,
+      role: role,
+    );
     await _dbHelper.registerUser(user);
     return true;
   }
 
   void logout() {
     _currentUser = null;
+    notifyListeners();
+  }
+
+  Future<void> linkSinhvienToCurrentUser(int sinhvienId) async {
+    if (_currentUser == null) return;
+    await _dbHelper.updateUserSinhvien(_currentUser!.id!, sinhvienId);
+    _currentUser = UserAccount(
+      id: _currentUser!.id,
+      username: _currentUser!.username,
+      passwordHash: _currentUser!.passwordHash,
+      role: _currentUser!.role,
+      sinhvienId: sinhvienId,
+    );
     notifyListeners();
   }
 }

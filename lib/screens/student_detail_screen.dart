@@ -46,6 +46,12 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
     }
 
     final sv = _student!;
+
+    final auth = Provider.of<AuthProvider>(context);
+    final currentUser = auth.currentUser;
+    final isAdmin = auth.isAdmin;
+    final isOwner = currentUser?.sinhvienId == sv.id;
+
     return Scaffold(
       appBar: AppBar(title: Text(sv.ten)),
       body: SingleChildScrollView(
@@ -72,7 +78,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
             if (sv.lat != null && sv.lng != null)
               Text('Tọa độ: (${sv.lat}, ${sv.lng})'),
             const SizedBox(height: 20),
-            if (Provider.of<AuthProvider>(context).isAdmin)
+            if (isAdmin || isOwner)
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
@@ -83,7 +89,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                   );
                 },
                 icon: const Icon(Icons.edit),
-                label: const Text('Chỉnh sửa'),
+                label: const Text('Chỉnh sửa thông tin'),
               ),
           ],
         ),
