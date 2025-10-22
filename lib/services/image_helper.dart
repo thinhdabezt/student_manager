@@ -20,8 +20,13 @@ class ImageHelper {
 
   // Chọn ảnh từ thư viện
   static Future<File?> pickFromGallery() async {
-    final status = await Permission.photos.request();
-    if (!status.isGranted) return null;
+    // For Android, we don't need to request permission for image_picker
+    // as it uses the system picker which has its own permissions
+    // For iOS, request photo library permission
+    if (Platform.isIOS) {
+      final status = await Permission.photos.request();
+      if (!status.isGranted) return null;
+    }
 
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return null;
