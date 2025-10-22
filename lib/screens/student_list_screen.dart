@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/providers/auth_provider.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
+import 'package:student_manager/utils/app_theme.dart';
 
 class StudentListScreen extends StatefulWidget {
   const StudentListScreen({super.key});
@@ -68,14 +69,26 @@ class _StudentListScreenState extends State<StudentListScreen> {
               padding: const EdgeInsets.all(8),
               children: [
                 if (myStudent != null) ...[
-                  const Text(
-                    '👤 Hồ sơ của tôi',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person, color: AppTheme.accentGreen),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Hồ sơ của tôi',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Card(
-                    color: Colors.blue.shade50,
-                    elevation: 2,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: AppTheme.accentGreen, width: 2),
+                    ),
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundImage: myStudent.avatarPath != null
@@ -83,8 +96,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             : const AssetImage('assets/default_avatar.png')
                                   as ImageProvider,
                       ),
-                      title: Text(myStudent.ten ?? 'Không tên'),
-                      subtitle: Text(myStudent.maSv ?? ''),
+                      title: Text(myStudent.ten),
+                      subtitle: Text(myStudent.maSv),
                       onTap: () {
                         Navigator.pushNamed(
                           context,
@@ -135,8 +148,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             : const AssetImage('assets/default_avatar.png')
                                   as ImageProvider,
                       ),
-                      title: Text(sv.ten ?? 'Không tên'),
-                      subtitle: Text(sv.maSv ?? ''),
+                      title: Text(sv.ten),
+                      subtitle: Text(sv.maSv),
                       onTap: () {
                         Navigator.pushNamed(
                           context,

@@ -6,7 +6,6 @@ import '../providers/student_provider.dart';
 import '../providers/major_provider.dart';
 import '../services/image_helper.dart';
 import 'dart:io';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import '../services/contact_helper.dart';
 
 class StudentFormScreen extends StatefulWidget {
@@ -172,10 +171,12 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Vui lòng nhập tên' : null,
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _maSvController,
                 decoration: const InputDecoration(labelText: 'Mã sinh viên'),
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -186,6 +187,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 12),
               // TextFormField(
               //   controller: _sdtController,
               //   decoration: const InputDecoration(labelText: 'Số điện thoại'),
@@ -238,6 +240,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _diaChiController,
                 decoration: const InputDecoration(labelText: 'Địa chỉ'),

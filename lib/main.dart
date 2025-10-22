@@ -5,6 +5,7 @@ import 'package:student_manager/providers/major_provider.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/screens/student_detail_screen.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
+import 'package:student_manager/utils/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/student_list_screen.dart';
 
@@ -25,10 +26,7 @@ class StudentManagerApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Quản lý Sinh viên',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme,
         initialRoute: '/login',
         routes: {
           '/login': (context) => const LoginScreen(),

@@ -6,6 +6,7 @@ import 'package:student_manager/providers/auth_provider.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/screens/map_screen.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
+import 'package:student_manager/utils/app_theme.dart';
 import '../models/sinhvien.dart';
 import '../services/database_helper.dart';
 
@@ -73,11 +74,36 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Mã SV: ${sv.maSv ?? 'Chưa có'}'),
-            Text('Email: ${sv.email ?? 'Chưa có'}'),
-            Text('SĐT: ${sv.sdt ?? 'Chưa có'}'),
-            Text('Địa chỉ: ${sv.diaChi ?? 'Chưa có'}'),
-            Text('Ngành ID: ${sv.nganhId ?? 'Chưa có'}'),
+            _buildInfoCard(
+              icon: Icons.badge,
+              label: 'Mã SV',
+              value: sv.maSv,
+              color: AppTheme.primaryBlue,
+            ),
+            _buildInfoCard(
+              icon: Icons.email,
+              label: 'Email',
+              value: sv.email,
+              color: AppTheme.secondaryOrange,
+            ),
+            _buildInfoCard(
+              icon: Icons.phone,
+              label: 'SĐT',
+              value: sv.sdt,
+              color: AppTheme.accentGreen,
+            ),
+            _buildInfoCard(
+              icon: Icons.location_on,
+              label: 'Địa chỉ',
+              value: sv.diaChi,
+              color: AppTheme.primaryBlue,
+            ),
+            _buildInfoCard(
+              icon: Icons.school,
+              label: 'Ngành ID',
+              value: sv.nganhId?.toString() ?? 'Chưa có',
+              color: AppTheme.secondaryOrange,
+            ),
             if (sv.latitude != null && sv.longitude != null)
               Text('Tọa độ: (${sv.latitude}, ${sv.longitude})'),
             const SizedBox(height: 20),
@@ -104,7 +130,6 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                         MapScreen(sinhVien: sv, isAdmin: auth.isAdmin),
                   ),
                 );
-
                 // Nếu admin cập nhật tọa độ mới
                 if (auth.isAdmin && result is LatLng) {
                   final updatedStudent = SinhVien(
@@ -127,6 +152,61 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
               },
               icon: const Icon(Icons.map),
               label: const Text('Xem vị trí trên bản đồ'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
