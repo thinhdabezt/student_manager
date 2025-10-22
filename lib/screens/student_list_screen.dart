@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:student_manager/models/sinhvien.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/providers/auth_provider.dart';
+import 'package:student_manager/providers/major_provider.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
 import 'package:student_manager/utils/app_theme.dart';
 
@@ -14,33 +16,67 @@ class StudentListScreen extends StatefulWidget {
 }
 
 class _StudentListScreenState extends State<StudentListScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  int? _selectedMajorFilter;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () =>
-          Provider.of<StudentProvider>(context, listen: false).fetchStudents(),
-    );
+    Future.microtask(() {
+      Provider.of<StudentProvider>(context, listen: false).fetchStudents();
+      Provider.of<MajorProvider>(context, listen: false).fetchMajors();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final studentProvider = Provider.of<StudentProvider>(context);
+    final majorProvider = Provider.of<MajorProvider>(context);
     final isAdmin = auth.isAdmin;
     final currentUser = auth.currentUser;
     final students = studentProvider.students;
 
-    final myStudent = currentUser?.sinhvienId != null
-        ? students.firstWhere(
-            (sv) => sv.id == currentUser!.sinhvienId,
-            orElse: () => null as dynamic, // tránh lỗi nếu chưa có
-          )
-        : null;
+    SinhVien? myStudent;
+    if (currentUser?.sinhvienId != null) {
+      try {
+        myStudent = students.firstWhere(
+          (sv) => sv.id == currentUser!.sinhvienId,
+        );
+      } catch (e) {
+        // Student not found in list
+        myStudent = null;
+      }
+    }
 
-    final otherStudents = students
+    // Filter students based on search query and major filter (admin only)
+    List<SinhVien> filteredStudents = students
         .where((sv) => sv.id != myStudent?.id)
         .toList();
+
+    if (isAdmin && _searchQuery.isNotEmpty) {
+      filteredStudents = filteredStudents.where((sv) {
+        final nameLower = sv.ten.toLowerCase();
+        final maSvLower = sv.maSv.toLowerCase();
+        final queryLower = _searchQuery.toLowerCase();
+        return nameLower.contains(queryLower) || maSvLower.contains(queryLower);
+      }).toList();
+    }
+
+    if (isAdmin && _selectedMajorFilter != null) {
+      filteredStudents = filteredStudents.where((sv) {
+        return sv.nganhId == _selectedMajorFilter;
+      }).toList();
+    }
+
+    final otherStudents = filteredStudents;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,6 +112,85 @@ class _StudentListScreenState extends State<StudentListScreen> {
           : ListView(
               padding: const EdgeInsets.all(8),
               children: [
+                // Search and filter section for admin
+                if (isAdmin) ...[
+                  Card(
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Tìm kiếm theo tên hoặc mã SV...',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchController.clear();
+                                          _searchQuery = '';
+                                        });
+                                      },
+                                    )
+                                  : null,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<int?>(
+                            value: _selectedMajorFilter,
+                            decoration: InputDecoration(
+                              labelText: 'Lọc theo ngành',
+                              prefixIcon: const Icon(Icons.school),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('Tất cả ngành'),
+                              ),
+                              ...majorProvider.majors.map((major) {
+                                return DropdownMenuItem<int?>(
+                                  value: major.id,
+                                  child: Text(major.ten),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedMajorFilter = value;
+                              });
+                            },
+                          ),
+                          if (_searchQuery.isNotEmpty || _selectedMajorFilter != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'Tìm thấy ${otherStudents.length} sinh viên',
+                                style: TextStyle(
+                                  color: AppTheme.primaryBlue,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (myStudent != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -110,7 +225,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                         Navigator.pushNamed(
                           context,
                           '/student_detail',
-                          arguments: myStudent.id,
+                          arguments: myStudent!.id,
                         );
                       },
                       trailing: IconButton(

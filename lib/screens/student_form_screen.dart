@@ -146,8 +146,6 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final majorProvider = Provider.of<MajorProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -270,10 +268,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 decoration: const InputDecoration(labelText: 'Địa chỉ'),
               ),
               const SizedBox(height: 12),
-              FutureBuilder(
-                future: majorProvider.fetchMajors(),
-                builder: (context, snapshot) {
-                  final majors = majorProvider.majors;
+              Consumer<MajorProvider>(
+                builder: (context, provider, child) {
+                  final majors = provider.majors;
                   
                   // Validate that the selected major exists in the list
                   int? validatedValue = _selectedMajorId;

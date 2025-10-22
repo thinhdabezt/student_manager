@@ -143,6 +143,69 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                   backgroundColor: AppTheme.secondaryOrange,
                 ),
               ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  // Show confirmation dialog
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Xác nhận xóa'),
+                      content: Text(
+                        'Bạn có chắc chắn muốn xóa sinh viên "${sv.ten}"?\n\n'
+                        'Hành động này không thể hoàn tác.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Hủy'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          child: const Text('Xóa'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true && mounted) {
+                    try {
+                      await Provider.of<StudentProvider>(
+                        context,
+                        listen: false,
+                      ).deleteStudent(sv.id!);
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã xóa sinh viên thành công'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.pop(context); // Go back to student list
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Lỗi khi xóa sinh viên: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
+                icon: const Icon(Icons.delete),
+                label: const Text('Xóa sinh viên'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ],
             const SizedBox(height: 12),
             ElevatedButton.icon(
@@ -156,23 +219,47 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                   ),
                 );
                 // Nếu admin cập nhật tọa độ mới
-                if (auth.isAdmin && result is LatLng) {
-                  final updatedStudent = SinhVien(
-                    id: sv.id,
-                    ten: sv.ten,
-                    maSv: sv.maSv,
-                    email: sv.email,
-                    sdt: sv.sdt,
-                    diaChi: sv.diaChi,
-                    nganhId: sv.nganhId,
-                    avatarPath: sv.avatarPath,
-                    latitude: result.latitude,
-                    longitude: result.longitude,
-                  );
-                  await Provider.of<StudentProvider>(
-                    context,
-                    listen: false,
-                  ).updateStudent(updatedStudent);
+                if (auth.isAdmin && result is Map<String, dynamic>) {
+                  final coordinates = result['coordinates'] as LatLng?;
+                  final address = result['address'] as String?;
+                  
+                  if (coordinates != null) {
+                    final updatedStudent = SinhVien(
+                      id: sv.id,
+                      ten: sv.ten,
+                      maSv: sv.maSv,
+                      email: sv.email,
+                      sdt: sv.sdt,
+                      diaChi: address ?? sv.diaChi, // Use new address if available
+                      nganhId: sv.nganhId,
+                      avatarPath: sv.avatarPath,
+                      latitude: coordinates.latitude,
+                      longitude: coordinates.longitude,
+                    );
+                    await Provider.of<StudentProvider>(
+                      context,
+                      listen: false,
+                    ).updateStudent(updatedStudent);
+                    
+                    // Reload student data to show updated info
+                    if (mounted) {
+                      _loadStudent(sv.id!);
+                    }
+                    
+                    // Show feedback
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            address != null 
+                              ? 'Đã cập nhật vị trí và địa chỉ'
+                              : 'Đã cập nhật vị trí (không tìm thấy địa chỉ)',
+                          ),
+                          backgroundColor: address != null ? Colors.green : Colors.orange,
+                        ),
+                      );
+                    }
+                  }
                 }
               },
               icon: const Icon(Icons.map),

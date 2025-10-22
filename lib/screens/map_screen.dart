@@ -14,7 +14,6 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  late GoogleMapController _mapController;
   LatLng? _currentPosition;
 
   @override
@@ -36,20 +35,84 @@ class _MapScreenState extends State<MapScreen> {
           _currentPosition =
               LatLng(locations.first.latitude, locations.first.longitude);
         });
+      } else {
+        // No location found, use default location (Vietnam center)
+        _useDefaultLocation();
       }
     } catch (e) {
       debugPrint('Không thể chuyển đổi địa chỉ: $e');
+      // Use default location on error
+      _useDefaultLocation();
+      
+      // Show user-friendly error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Không thể tìm vị trí từ địa chỉ. Hiển thị vị trí mặc định.',
+            ),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Đóng',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
     }
+  }
+
+  void _useDefaultLocation() {
+    // Use Vietnam center as default (Hanoi)
+    setState(() {
+      _currentPosition = const LatLng(21.0285, 105.8542);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasCoordinates = widget.sinhVien.latitude != null && 
+                           widget.sinhVien.longitude != null;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Vị trí: ${widget.sinhVien.ten}'),
+        actions: [
+          if (!hasCoordinates)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Chip(
+                label: const Text(
+                  'Vị trí ước tính',
+                  style: TextStyle(fontSize: 12, color: Colors.black),
+                ),
+                backgroundColor: Colors.orange[100],
+              ),
+            ),
+        ],
       ),
       body: _currentPosition == null
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text('Đang tải vị trí...'),
+                  if (!hasCoordinates) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Địa chỉ: ${widget.sinhVien.diaChi}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            )
           : GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: _currentPosition!,
@@ -63,7 +126,6 @@ class _MapScreenState extends State<MapScreen> {
                       InfoWindow(title: widget.sinhVien.ten, snippet: widget.sinhVien.diaChi),
                 )
               },
-              onMapCreated: (controller) => _mapController = controller,
               myLocationEnabled: widget.isAdmin,
               onTap: widget.isAdmin
                   ? (pos) {
@@ -73,14 +135,79 @@ class _MapScreenState extends State<MapScreen> {
                     }
                   : null,
             ),
+      bottomSheet: widget.isAdmin && !hasCoordinates
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.blue[50],
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Chạm vào bản đồ để đặt vị trí chính xác',
+                      style: TextStyle(
+                        color: Colors.blue[900],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
       floatingActionButton: widget.isAdmin
           ? FloatingActionButton.extended(
               icon: const Icon(Icons.save),
               label: const Text('Lưu vị trí'),
-              onPressed: () {
-                Navigator.pop(context, _currentPosition);
+              onPressed: () async {
+                if (_currentPosition == null) return;
+                
+                // Try to get address from coordinates (reverse geocoding)
+                try {
+                  final placemarks = await placemarkFromCoordinates(
+                    _currentPosition!.latitude,
+                    _currentPosition!.longitude,
+                  );
+                  
+                  if (placemarks.isNotEmpty) {
+                    final place = placemarks.first;
+                    // Build address from placemark
+                    final addressParts = [
+                      if (place.street?.isNotEmpty == true) place.street,
+                      if (place.subLocality?.isNotEmpty == true) place.subLocality,
+                      if (place.locality?.isNotEmpty == true) place.locality,
+                      if (place.administrativeArea?.isNotEmpty == true) place.administrativeArea,
+                      if (place.country?.isNotEmpty == true) place.country,
+                    ];
+                    final address = addressParts.join(', ');
+                    
+                    // Return both coordinates and address
+                    Navigator.pop(context, {
+                      'coordinates': _currentPosition,
+                      'address': address.isNotEmpty ? address : null,
+                    });
+                  } else {
+                    // No address found, return only coordinates
+                    Navigator.pop(context, {
+                      'coordinates': _currentPosition,
+                      'address': null,
+                    });
+                  }
+                } catch (e) {
+                  debugPrint('Reverse geocoding failed: $e');
+                  // If reverse geocoding fails, return only coordinates
+                  Navigator.pop(context, {
+                    'coordinates': _currentPosition,
+                    'address': null,
+                  });
+                }
               },
             )
+          : null,
+      floatingActionButtonLocation: widget.isAdmin 
+          ? FloatingActionButtonLocation.endFloat 
           : null,
     );
   }

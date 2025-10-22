@@ -45,12 +45,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 validator: (v) => v == null || v.isEmpty ? 'Nhập tên đăng nhập' : null,
                 onSaved: (v) => _username = v!,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Mật khẩu'),
                 obscureText: true,
                 validator: (v) => v == null || v.length < 4 ? 'Ít nhất 4 ký tự' : null,
                 onSaved: (v) => _password = v!,
               ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _role,
                 items: const [
