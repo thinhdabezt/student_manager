@@ -46,6 +46,14 @@ class _StudentListScreenState extends State<StudentListScreen> {
       appBar: AppBar(
         title: const Text('Danh sách sinh viên'),
         actions: [
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.school),
+              tooltip: 'Quản lý Ngành',
+              onPressed: () {
+                Navigator.pushNamed(context, '/majors');
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',

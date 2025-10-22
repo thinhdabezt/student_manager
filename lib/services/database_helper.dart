@@ -130,6 +130,13 @@ class DatabaseHelper {
     return maps.map((e) => Nganh.fromMap(e)).toList();
   }
 
+  Future<Nganh?> getNganhById(int id) async {
+    final db = await database;
+    final maps = await db.query('Nganh', where: 'id = ?', whereArgs: [id]);
+    if (maps.isEmpty) return null;
+    return Nganh.fromMap(maps.first);
+  }
+
   Future<int> updateNganh(Nganh nganh) async {
     final db = await database;
     return await db.update(

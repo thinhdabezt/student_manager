@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:student_manager/providers/auth_provider.dart';
+import 'package:student_manager/providers/major_provider.dart';
 import 'package:student_manager/providers/student_provider.dart';
 import 'package:student_manager/screens/map_screen.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
@@ -19,6 +20,7 @@ class StudentDetailScreen extends StatefulWidget {
 
 class _StudentDetailScreenState extends State<StudentDetailScreen> {
   SinhVien? _student;
+  String? _majorName;
   bool _loading = true;
 
   @override
@@ -31,8 +33,17 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
   Future<void> _loadStudent(int id) async {
     final db = DatabaseHelper();
     final sv = await db.getSinhVienById(id);
+    
+    String? majorName;
+    if (sv?.nganhId != null) {
+      final majorProvider = Provider.of<MajorProvider>(context, listen: false);
+      await majorProvider.fetchMajors();
+      majorName = majorProvider.getMajorName(sv!.nganhId);
+    }
+    
     setState(() {
       _student = sv;
+      _majorName = majorName;
       _loading = false;
     });
   }
@@ -100,8 +111,8 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
             ),
             _buildInfoCard(
               icon: Icons.school,
-              label: 'Ngành ID',
-              value: sv.nganhId?.toString() ?? 'Chưa có',
+              label: 'Ngành',
+              value: _majorName ?? 'Chưa có',
               color: AppTheme.secondaryOrange,
             ),
             if (sv.latitude != null && sv.longitude != null)
@@ -120,6 +131,20 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                 icon: const Icon(Icons.edit),
                 label: const Text('Chỉnh sửa thông tin'),
               ),
+            if (isAdmin) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/majors');
+                },
+                icon: const Icon(Icons.admin_panel_settings),
+                label: const Text('Quản lý Ngành'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.secondaryOrange,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: () async {
                 final auth = Provider.of<AuthProvider>(context, listen: false);
