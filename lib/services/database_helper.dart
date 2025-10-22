@@ -149,7 +149,31 @@ class DatabaseHelper {
 
   Future<int> deleteNganh(int id) async {
     final db = await database;
+    
+    // Check if any students are using this major
+    final students = await db.query(
+      'Sinhvien',
+      where: 'nganh_id = ?',
+      whereArgs: [id],
+    );
+    
+    if (students.isNotEmpty) {
+      throw Exception(
+        'Không thể xóa ngành này vì có ${students.length} sinh viên đang sử dụng. '
+        'Vui lòng chuyển sinh viên sang ngành khác trước.',
+      );
+    }
+    
     return await db.delete('Nganh', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> getStudentCountByMajorId(int majorId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM Sinhvien WHERE nganh_id = ?',
+      [majorId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 
   // ===========================================

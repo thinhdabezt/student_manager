@@ -37,6 +37,10 @@ class MajorProvider with ChangeNotifier {
     await fetchMajors();
   }
 
+  Future<int> getStudentCountByMajorId(int majorId) async {
+    return await _dbHelper.getStudentCountByMajorId(majorId);
+  }
+
   String? getMajorName(int? id) {
     if (id == null) return null;
     try {

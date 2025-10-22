@@ -46,6 +46,30 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       text: widget.existingStudent?.diaChi ?? '',
     );
     _selectedMajorId = widget.existingStudent?.nganhId;
+    
+    // Load majors and validate the selected major ID
+    Future.microtask(() async {
+      final majorProvider = Provider.of<MajorProvider>(context, listen: false);
+      await majorProvider.fetchMajors();
+      
+      // If the selected major no longer exists, reset it
+      if (_selectedMajorId != null) {
+        final majorExists = majorProvider.majors.any((m) => m.id == _selectedMajorId);
+        if (!majorExists) {
+          setState(() {
+            _selectedMajorId = null;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ngành học trước đây đã bị xóa. Vui lòng chọn ngành mới.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -250,8 +274,15 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 future: majorProvider.fetchMajors(),
                 builder: (context, snapshot) {
                   final majors = majorProvider.majors;
+                  
+                  // Validate that the selected major exists in the list
+                  int? validatedValue = _selectedMajorId;
+                  if (validatedValue != null && !majors.any((m) => m.id == validatedValue)) {
+                    validatedValue = null;
+                  }
+                  
                   return DropdownButtonFormField<int>(
-                    value: _selectedMajorId,
+                    value: validatedValue,
                     items: majors
                         .map(
                           (nganh) => DropdownMenuItem<int>(
@@ -263,7 +294,16 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     onChanged: (value) {
                       setState(() => _selectedMajorId = value);
                     },
-                    decoration: const InputDecoration(labelText: 'Ngành học'),
+                    decoration: const InputDecoration(
+                      labelText: 'Ngành học',
+                      hintText: 'Chọn ngành học',
+                    ),
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Vui lòng chọn ngành học';
+                      }
+                      return null;
+                    },
                   );
                 },
               ),

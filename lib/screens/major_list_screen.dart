@@ -20,7 +20,33 @@ class _MajorListScreenState extends State<MajorListScreen> {
     );
   }
 
-  void _deleteMajor(BuildContext context, int id, String name) {
+  void _deleteMajor(BuildContext context, int id, String name) async {
+    // Check student count first
+    final majorProvider = Provider.of<MajorProvider>(context, listen: false);
+    final studentCount = await majorProvider.getStudentCountByMajorId(id);
+    
+    if (studentCount > 0) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Không thể xóa'),
+          content: Text(
+            'Ngành "$name" có $studentCount sinh viên đang sử dụng.\n\n'
+            'Vui lòng chuyển các sinh viên sang ngành khác trước khi xóa.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -37,7 +63,7 @@ class _MajorListScreenState extends State<MajorListScreen> {
               try {
                 await Provider.of<MajorProvider>(context, listen: false)
                     .deleteMajor(id);
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Xóa ngành thành công'),
@@ -46,11 +72,12 @@ class _MajorListScreenState extends State<MajorListScreen> {
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Lỗi: $e'),
+                      content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
                       backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 4),
                     ),
                   );
                 }
@@ -121,73 +148,109 @@ class _MajorListScreenState extends State<MajorListScreen> {
                   itemCount: majorProvider.majors.length,
                   itemBuilder: (context, index) {
                     final major = majorProvider.majors[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: AppTheme.primaryBlue.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        leading: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
+                    return FutureBuilder<int>(
+                      future: majorProvider.getStudentCountByMajorId(major.id!),
+                      builder: (context, snapshot) {
+                        final studentCount = snapshot.data ?? 0;
+                        
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: AppTheme.primaryBlue.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
-                          child: Icon(
-                            Icons.school,
-                            color: AppTheme.primaryBlue,
-                          ),
-                        ),
-                        title: Text(
-                          major.ten,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        subtitle: Text('ID: ${major.id}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: AppTheme.secondaryOrange,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MajorFormScreen(
-                                      existingMajor: major,
+                              child: Icon(
+                                Icons.school,
+                                color: AppTheme.primaryBlue,
+                              ),
+                            ),
+                            title: Text(
+                              major.ten,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('ID: ${major.id}'),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.people,
+                                      size: 16,
+                                      color: studentCount > 0 
+                                        ? AppTheme.accentGreen 
+                                        : Colors.grey,
                                     ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$studentCount sinh viên',
+                                      style: TextStyle(
+                                        color: studentCount > 0 
+                                          ? AppTheme.accentGreen 
+                                          : Colors.grey,
+                                        fontWeight: studentCount > 0 
+                                          ? FontWeight.w600 
+                                          : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: AppTheme.secondaryOrange,
                                   ),
-                                );
-                              },
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MajorFormScreen(
+                                          existingMajor: major,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () => _deleteMajor(
+                                    context,
+                                    major.id!,
+                                    major.ten,
+                                  ),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
-                              ),
-                              onPressed: () => _deleteMajor(
-                                context,
-                                major.id!,
-                                major.ten,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
