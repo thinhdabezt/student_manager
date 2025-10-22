@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:student_manager/providers/auth_provider.dart';
+import 'package:student_manager/providers/student_provider.dart';
+import 'package:student_manager/screens/map_screen.dart';
 import 'package:student_manager/screens/student_form_screen.dart';
 import '../models/sinhvien.dart';
 import '../services/database_helper.dart';
@@ -75,8 +78,8 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
             Text('SĐT: ${sv.sdt ?? 'Chưa có'}'),
             Text('Địa chỉ: ${sv.diaChi ?? 'Chưa có'}'),
             Text('Ngành ID: ${sv.nganhId ?? 'Chưa có'}'),
-            if (sv.lat != null && sv.lng != null)
-              Text('Tọa độ: (${sv.lat}, ${sv.lng})'),
+            if (sv.latitude != null && sv.longitude != null)
+              Text('Tọa độ: (${sv.latitude}, ${sv.longitude})'),
             const SizedBox(height: 20),
             if (isAdmin || isOwner)
               ElevatedButton.icon(
@@ -91,6 +94,40 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                 icon: const Icon(Icons.edit),
                 label: const Text('Chỉnh sửa thông tin'),
               ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MapScreen(sinhVien: sv, isAdmin: auth.isAdmin),
+                  ),
+                );
+
+                // Nếu admin cập nhật tọa độ mới
+                if (auth.isAdmin && result is LatLng) {
+                  final updatedStudent = SinhVien(
+                    id: sv.id,
+                    ten: sv.ten,
+                    maSv: sv.maSv,
+                    email: sv.email,
+                    sdt: sv.sdt,
+                    diaChi: sv.diaChi,
+                    nganhId: sv.nganhId,
+                    avatarPath: sv.avatarPath,
+                    latitude: result.latitude,
+                    longitude: result.longitude,
+                  );
+                  await Provider.of<StudentProvider>(
+                    context,
+                    listen: false,
+                  ).updateStudent(updatedStudent);
+                }
+              },
+              icon: const Icon(Icons.map),
+              label: const Text('Xem vị trí trên bản đồ'),
+            ),
           ],
         ),
       ),

@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -28,9 +27,20 @@ class DatabaseHelper {
     final path = join(directory.path, 'student_manager.db');
     return await openDatabase(
       path,
-      version: 2, // bump version
+      version: 3, // bump version
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // add role column with default 'student' to existing table
+          await db.execute(
+            "ALTER TABLE UserAccount ADD COLUMN role TEXT DEFAULT 'student'",
+          );
+        }
+        if (oldVersion < 3) {
+          await db.execute("ALTER TABLE Sinhvien ADD COLUMN latitude REAL");
+          await db.execute("ALTER TABLE Sinhvien ADD COLUMN longitude REAL");
+        }
+      },
     );
   }
 
@@ -46,15 +56,15 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE Sinhvien (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ten TEXT NOT NULL,
+        ten TEXT,
         ma_sv TEXT,
         email TEXT,
         sdt TEXT,
         dia_chi TEXT,
         nganh_id INTEGER,
         avatar_path TEXT,
-        lat REAL,
-        lng REAL,
+        latitude REAL,
+        longitude REAL,
         FOREIGN KEY (nganh_id) REFERENCES Nganh(id)
       )
     ''');
@@ -70,44 +80,39 @@ class DatabaseHelper {
       )
     ''');
 
+    // // Seed sample data for Nganh
+    // int cnttId = await db.insert('Nganh', {'ten': 'Công nghệ thông tin'});
+    // int qtkdId = await db.insert('Nganh', {'ten': 'Quản trị kinh doanh'});
+
+    // // Seed sample data for Sinhvien
+    // await db.insert('Sinhvien', {
+    //   'ten': 'Nguyễn Văn A',
+    //   'ma_sv': 'SV001',
+    //   'email': 'vana@example.com',
+    //   'sdt': '0123456789',
+    //   'dia_chi': 'Hà Nội',
+    //   'nganh_id': cnttId,
+    //   'avatar_path': null,
+    //   'lat': 21.0285,
+    //   'lng': 105.8542,
+    // });
+    // await db.insert('Sinhvien', {
+    //   'ten': 'Trần Thị B',
+    //   'ma_sv': 'SV002',
+    //   'email': 'thib@example.com',
+    //   'sdt': '0987654321',
+    //   'dia_chi': 'Hồ Chí Minh',
+    //   'nganh_id': qtkdId,
+    //   'avatar_path': null,
+    //   'lat': 10.7769,
+    //   'lng': 106.7009,
+    // });
+
     // Seed sample data for Nganh
-    int cnttId = await db.insert('Nganh', {'ten': 'Công nghệ thông tin'});
-    int qtkdId = await db.insert('Nganh', {'ten': 'Quản trị kinh doanh'});
+    await db.insert('Nganh', {'ten': 'Công nghệ thông tin'});
+    await db.insert('Nganh', {'ten': 'Quản trị kinh doanh'});
 
-    // Seed sample data for Sinhvien
-    await db.insert('Sinhvien', {
-      'ten': 'Nguyễn Văn A',
-      'ma_sv': 'SV001',
-      'email': 'vana@example.com',
-      'sdt': '0123456789',
-      'dia_chi': 'Hà Nội',
-      'nganh_id': cnttId,
-      'avatar_path': null,
-      'lat': 21.0285,
-      'lng': 105.8542,
-    });
-    await db.insert('Sinhvien', {
-      'ten': 'Trần Thị B',
-      'ma_sv': 'SV002',
-      'email': 'thib@example.com',
-      'sdt': '0987654321',
-      'dia_chi': 'Hồ Chí Minh',
-      'nganh_id': qtkdId,
-      'avatar_path': null,
-      'lat': 10.7769,
-      'lng': 106.7009,
-    });
-
-    print('Database created successfully!');
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // add role column with default 'student' to existing table
-      await db.execute(
-        "ALTER TABLE UserAccount ADD COLUMN role TEXT DEFAULT 'student'",
-      );
-    }
+    // print('Database created successfully!');
   }
 
   // ===========================================

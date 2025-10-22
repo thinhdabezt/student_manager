@@ -85,6 +85,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       ),
                       title: Text(myStudent.ten ?? 'Không tên'),
                       subtitle: Text(myStudent.maSv ?? ''),
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/student_detail',
+                          arguments: myStudent.id,
+                        );
+                      },
                       trailing: IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () {

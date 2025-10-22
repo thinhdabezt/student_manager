@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:student_manager/providers/auth_provider.dart';
 import '../models/sinhvien.dart';
 import '../providers/student_provider.dart';
 import '../providers/major_provider.dart';
 import '../services/image_helper.dart';
 import 'dart:io';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import '../services/contact_helper.dart';
 
 class StudentFormScreen extends StatefulWidget {
   final SinhVien? existingStudent; // nếu có -> là chế độ sửa
@@ -183,9 +186,57 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   return null;
                 },
               ),
-              TextFormField(
-                controller: _sdtController,
-                decoration: const InputDecoration(labelText: 'Số điện thoại'),
+              // TextFormField(
+              //   controller: _sdtController,
+              //   decoration: const InputDecoration(labelText: 'Số điện thoại'),
+              // ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _sdtController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Số điện thoại',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty)
+                          return 'Nhập số điện thoại';
+                        return null;
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.contacts),
+                    tooltip: 'Chọn từ danh bạ',
+                    onPressed: () async {
+                      final auth = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
+                      if (!auth.isAdmin &&
+                          auth.currentUser?.sinhvienId !=
+                              widget.existingStudent?.id) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Bạn không có quyền chỉnh sửa danh bạ',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      final contact = await ContactHelper.pickContactFromList(
+                        context,
+                      );
+                      if (contact != null && contact.phones.isNotEmpty) {
+                        setState(() {
+                          _sdtController.text = contact.phones.first.number;
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
               TextFormField(
                 controller: _diaChiController,
